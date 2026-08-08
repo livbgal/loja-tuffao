@@ -1,6 +1,6 @@
-export function ProductImage({src,label,wide=false}:{src?:string;label:string;wide?:boolean}){
-  if(src) return <div className={`product-image ${wide?'wide':''}`}><img src={src} alt={label} /></div>;
-  return <div className={`product-image placeholder ${wide?'wide':''}`} role="img" aria-label={`${label}: imagem em breve`}>
-    <span>IMAGEM EM BREVE</span><strong>{label}</strong>
-  </div>;
-}
+const productImages: Record<string, string> = {
+  "Camisa Torcida Preta": "/camisa-torcida-preta.jpeg",
+  "Camisa Torcida Branca": "/camisa-torcida-branca.jpeg",
+  "Moletom Tuffão": "/moletom.jpeg",
+  "Copo Térmico da Tuffão": "/copo-termico.jpeg",
+};
