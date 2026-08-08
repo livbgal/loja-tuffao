@@ -3,7 +3,6 @@ type ProductImageProps = {
   label: string;
   wide?: boolean;
 };
-
 export function ProductImage({
   src,
   label,
@@ -16,7 +15,6 @@ export function ProductImage({
       </div>
     );
   }
-
   return (
     <div
       className={`product-image placeholder ${wide ? "wide" : ""}`}
