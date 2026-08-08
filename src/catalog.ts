@@ -24,7 +24,7 @@ export const PRODUCTS: Product[] = [
     description: 'Camisa de torcida preta da coleção oficial.',
     needsSize: true,
     available: true,
-    image: '/assets/camisa-torcida-preta.jpeg',
+    image: '/camisa-torcida-preta.jpeg',
     imageLabel: 'Camisa Torcida Preta',
   },
   {
@@ -36,7 +36,7 @@ export const PRODUCTS: Product[] = [
     description: 'Camisa de torcida branca da coleção oficial.',
     needsSize: true,
     available: true,
-    image: '/assets/camisa-torcida-branca.jpeg',
+    image: '/camisa-torcida-branca.jpeg',
     imageLabel: 'Camisa Torcida Branca',
   },
   {
@@ -48,7 +48,7 @@ export const PRODUCTS: Product[] = [
     description: 'Moletom oficial da equipe, com identidade Tuffão.',
     needsSize: true,
     available: true,
-    image: '/assets/moletom.jpeg',
+    image: '/moletom.jpeg',
     imageLabel: 'Moletom Tuffão',
   },
   {
@@ -60,7 +60,7 @@ export const PRODUCTS: Product[] = [
     description: 'Copo térmico personalizado com a marca da equipe.',
     needsSize: false,
     available: true,
-    image: '/assets/copo-termico.jpeg',
+    image: '/copo-termico.jpeg',
     imageLabel: 'Copo Térmico',
   },
 ];
