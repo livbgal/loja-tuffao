@@ -147,7 +147,7 @@ export function Checkout() {
     ].join("\n");
 
     const whatsappUrl =
-      `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
+      `https://wa.me/5521979239910{encodeURIComponent(
         whatsappMessage
       )}`;
 
