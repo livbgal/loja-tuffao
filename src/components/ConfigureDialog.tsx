@@ -23,7 +23,7 @@ export function ConfigureDialog({product,combo,onClose}:{product?:Product;combo?
       const ref=getProduct(state[i].productId);
       return {label:s.label,productId:state[i].productId,productName:ref?.name??s.label,...(state[i].size?{size:state[i].size}:{})};
     });
-    addItem({kind:combo?'combo':'product',refId:combo?.id??product!.id,name:combo?`${combo.code} — ${combo.name}`:product!.name,badge:combo?'Combo':isBoxMember?'Membro do box':undefined,unitPrice,quantity:1,pieces,image:product?.image});
+    addItem({kind:combo?'combo':'product',refId:combo?.id??product!.id,name:combo?`${combo.code} — ${combo.name}`:product!.name,badge:combo?'Combo':isBoxMember?'Membro do box':undefined,unitPrice,quantity:1,pieces,image:combo?.image??product?.image});
     onClose(); openCart();
   }
 
