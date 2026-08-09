@@ -147,12 +147,135 @@ export function Checkout() {
      ======================================================= */
 
   async function confirmOrder() {
-    if (submitting) return;
+  if (submitting) return;
 
-    if (!validCustomer || !payment || !delivery) {
-      setSubmitError(
-        "Revise os dados do pedido antes de confirmar."
+  if (!validCustomer || !payment || !delivery) {
+    setSubmitError("Revise os dados do pedido antes de confirmar.");
+    return;
+  }
+
+  setSubmitting(true);
+  setSubmitError("");
+
+  const orderId = createOrderId();
+
+  const paymentLabel =
+    payment === "pix"
+      ? "PIX"
+      : payment === "credito"
+        ? "Cartão de crédito"
+        : "Cartão de débito";
+
+  const deliveryLabel =
+    delivery === "retirada"
+      ? "Retirada com a equipe"
+      : "Entrega";
+
+  const whatsappMessage = [
+    "Olá! Finalizei um pedido na Loja Tuffão 🌪️",
+    "",
+    `Pedido: ${orderId}`,
+    `Nome: ${customer.name}`,
+    `Valor total: ${formatBRL(subtotal)}`,
+    `Pagamento desejado: ${paymentLabel}`,
+    `Recebimento: ${deliveryLabel}`,
+    "",
+    "Gostaria de receber meu link de pagamento.",
+  ].join("\n");
+
+  const whatsappUrl =
+    "https://api.whatsapp.com/send?phone=5521979239910&text=" +
+    encodeURIComponent(whatsappMessage);
+
+  /*
+   * Abre a aba no momento exato do clique.
+   * Isso evita que Safari, Chrome ou celular bloqueiem o WhatsApp
+   * depois da espera pelo Formspree.
+   */
+  const whatsappWindow = window.open("", "_blank");
+
+  const order = {
+    id: orderId,
+    createdAt: new Date().toISOString(),
+    items,
+    subtotal,
+    total: subtotal,
+    customer,
+    payment,
+    delivery,
+    notes,
+  };
+
+  try {
+    const formData = new FormData();
+
+    formData.append("_subject", `Novo pedido Tuffão — ${orderId}`);
+    formData.append("pedido", orderId);
+    formData.append("nome", customer.name.trim());
+    formData.append("email", customer.email.trim());
+    formData.append("_replyto", customer.email.trim());
+    formData.append("whatsapp", customer.whatsapp.trim());
+    formData.append("pagamento", paymentLabel);
+    formData.append("recebimento", deliveryLabel);
+    formData.append("itens", itemsSummary);
+    formData.append("total", formatBRL(subtotal));
+    formData.append(
+      "observacoes",
+      notes.trim() || "Nenhuma observação."
+    );
+    formData.append(
+      "data",
+      new Date().toLocaleString("pt-BR")
+    );
+
+    const response = await fetch(
+      "https://formspree.io/f/xdenabro",
+      {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+        },
+        body: formData,
+      }
+    );
+
+    const result = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      throw new Error(
+        result?.errors?.[0]?.message ||
+          `O Formspree recusou o pedido. Código ${response.status}.`
       );
+    }
+
+    localStorage.setItem(
+      "tuffao-last-order-v2",
+      JSON.stringify(order)
+    );
+
+    clear();
+
+    if (whatsappWindow) {
+      whatsappWindow.location.href = whatsappUrl;
+    } else {
+      window.location.href = whatsappUrl;
+    }
+  } catch (error) {
+    if (whatsappWindow) {
+      whatsappWindow.close();
+    }
+
+    console.error(error);
+
+    setSubmitError(
+      error instanceof Error
+        ? `Não foi possível registrar o pedido: ${error.message}`
+        : "Não foi possível registrar o pedido."
+    );
+
+    setSubmitting(false);
+  }
+}
 
       return;
     }
