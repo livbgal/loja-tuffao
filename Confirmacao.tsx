@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 
 const WHATSAPP_URL =
-  "https://wa.me/5521979239910" +
+  "https://wa.me/5521979239910?text=" +
   encodeURIComponent(
     "Olá! Finalizei um pedido na Loja Tuffão e gostaria de receber o link de pagamento."
   );
