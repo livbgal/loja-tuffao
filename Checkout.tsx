@@ -82,16 +82,6 @@ async function confirmOrder() {
       }
     );
 
-    const result = await response.json().catch(() => null);
-
-    if (!response.ok) {
-      console.error("Erro do Formspree:", result);
-
-      throw new Error(
-        result?.errors?.[0]?.message ||
-          `O Formspree recusou o pedido. Código ${response.status}.`
-      );
-    }
 
     localStorage.setItem(
       "tuffao-last-order-v2",
