@@ -34,8 +34,8 @@ async function confirmOrder() {
   ].join("\n");
 
   const whatsappUrl =
-    "https://wa.me/5521979239910?text=" +
-    encodeURIComponent(whatsappMessage);
+  "https://wa.me/5521979239910?text=" +
+  encodeURIComponent(whatsappMessage);
 
   const order = {
     id: orderId,
@@ -71,7 +71,7 @@ async function confirmOrder() {
       new Date().toLocaleString("pt-BR")
     );
 
-    const response = await fetch(
+    const response (
       "https://formspree.io/f/xdenabro",
       {
         method: "POST",
