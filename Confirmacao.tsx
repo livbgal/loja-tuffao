@@ -1,3 +1,38 @@
-import { Link } from 'react-router-dom';
-import { formatBRL } from '../catalog';
-export function Confirmacao(){const raw=localStorage.getItem('tuffao-last-order-v2');const order=raw?JSON.parse(raw):null;if(!order)return <main className="container page empty"><h1>NENHUM PEDIDO ENCONTRADO</h1><Link className="btn primary" to="/colecao">VER COLEÇÃO</Link></main>;return <main className="container page confirmation"><small>OBRIGADO POR APOIAR A EQUIPE</small><h1>PEDIDO CONFIRMADO.</h1><div className="order-info"><div><span>NÚMERO</span><strong>{order.id}</strong></div><div><span>VALOR TOTAL</span><strong>{formatBRL(order.total)}</strong></div><div><span>PAGAMENTO</span><strong>{order.payment.toUpperCase()}</strong></div></div><section><h2>RESUMO</h2><ul className="review">{order.items.map((i:any)=><li key={i.uid}><span>{i.quantity}× {i.name}</span><strong>{formatBRL(i.unitPrice*i.quantity)}</strong></li>)}</ul></section><section className="notice"><h2>PAGAMENTO</h2><p>Esta versão registra o pedido localmente, mas ainda não realiza cobranças. Conecte um gateway de pagamento antes de abrir as vendas.</p></section><div className="actions"><a className="btn primary" href="https://wa.me/" target="_blank" rel="noreferrer">FALAR COM A TUFFÃO</a><Link className="btn outline" to="/colecao">VOLTAR À COLEÇÃO</Link></div></main>}
+import { Link } from "react-router-dom";
+
+const WHATSAPP_URL =
+  "https://wa.me/5521979239910?text=" +
+  encodeURIComponent(
+    "Olá! Finalizei um pedido na Loja Tuffão e gostaria de receber o link de pagamento."
+  );
+
+export function Confirmacao() {
+  return (
+    <main className="page-shell">
+      <section className="checkout-success">
+        <p className="eyebrow">PEDIDO REGISTRADO</p>
+
+        <h1>Pedido recebido.</h1>
+
+        <p>
+          Seu pedido foi registrado. Entre em contato com a Tuffão pelo
+          WhatsApp para receber o link de pagamento correspondente ao valor
+          da compra.
+        </p>
+
+        <a
+          href={WHATSAPP_URL}
+          target="_blank"
+          rel="noreferrer"
+          className="btn primary"
+        >
+          RECEBER LINK DE PAGAMENTO
+        </a>
+
+        <Link to="/colecao" className="btn outline">
+          VOLTAR À COLEÇÃO
+        </Link>
+      </section>
+    </main>
+  );
+}
