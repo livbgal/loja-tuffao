@@ -1,5 +1,145 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { formatBRL } from '../catalog';
-import { useCart } from '../cart';
-export function Checkout(){const {items,subtotal,clear,hydrated}=useCart();const navigate=useNavigate();const [step,setStep]=useState(0);const [customer,setCustomer]=useState({name:'',whatsapp:'',email:'',cpf:''});const [payment,setPayment]=useState('');const [delivery,setDelivery]=useState('');const [notes,setNotes]=useState('');const validCustomer=customer.name.trim().length>=3&&customer.whatsapp.replace(/\D/g,'').length>=10&&customer.email.includes('@')&&customer.cpf.replace(/\D/g,'').length===11;if(hydrated&&items.length===0)return <main className="container page empty"><h1>CARRINHO VAZIO</h1><Link className="btn primary" to="/colecao">VOLTAR À COLEÇÃO</Link></main>;function next(){if(step===0&&!validCustomer){alert('Preencha corretamente os dados do comprador.');return}if(step===1&&(!payment||!delivery)){alert('Escolha pagamento e recebimento.');return}setStep(s=>Math.min(2,s+1))}function confirm(){const order={id:`TUF-${new Date().getFullYear()}-${Math.floor(Math.random()*9000)+1000}`,items,total:subtotal,customer,payment,delivery,notes};localStorage.setItem('tuffao-last-order-v2',JSON.stringify(order));clear();navigate('/confirmacao')}return <main className="container page"><small>CARRINHO / CHECKOUT</small><h1>CHECKOUT</h1><ol className="steps">{['DADOS','PAGAMENTO','REVISÃO'].map((s,i)=><li className={step===i?'active':''} key={s}>ETAPA {i+1}<strong>{s}</strong></li>)}</ol><div className="checkout-grid"><div>{step===0&&<section className="form"><h2>DADOS DO COMPRADOR</h2><input placeholder="Nome completo" value={customer.name} onChange={e=>setCustomer({...customer,name:e.target.value})}/><input placeholder="WhatsApp" value={customer.whatsapp} onChange={e=>setCustomer({...customer,whatsapp:e.target.value})}/><input placeholder="E-mail" type="email" value={customer.email} onChange={e=>setCustomer({...customer,email:e.target.value})}/><input placeholder="CPF" value={customer.cpf} onChange={e=>setCustomer({...customer,cpf:e.target.value})}/></section>}{step===1&&<section><h2>FORMA DE PAGAMENTO</h2><div className="choice-list">{[['pix','PIX'],['credito','CARTÃO DE CRÉDITO'],['debito','CARTÃO DE DÉBITO']].map(([id,label])=><button className={payment===id?'active':''} onClick={()=>setPayment(id)} key={id}>{label}</button>)}</div><h2>COMO DESEJA RECEBER?</h2><div className="choice-list">{[['retirada','RETIRADA COM A EQUIPE'],['entrega','ENTREGA']].map(([id,label])=><button className={delivery===id?'active':''} onClick={()=>setDelivery(id)} key={id}>{label}</button>)}</div><textarea placeholder="Observação para a equipe" value={notes} onChange={e=>setNotes(e.target.value)}/></section>}{step===2&&<section><h2>REVISÃO DO PEDIDO</h2><ul className="review">{items.map(i=><li key={i.uid}><span>{i.quantity}× {i.name}</span><strong>{formatBRL(i.unitPrice*i.quantity)}</strong></li>)}</ul><p>{customer.name} · {customer.whatsapp}</p><p>{payment.toUpperCase()} · {delivery.toUpperCase()}</p></section>}<div className="checkout-actions">{step>0&&<button className="btn outline" onClick={()=>setStep(s=>s-1)}>VOLTAR</button>}{step<2?<button className="btn primary" onClick={next}>CONTINUAR</button>:<button className="btn primary" onClick={confirm}>CONFIRMAR PEDIDO</button>}</div></div><aside className="summary"><h2>RESUMO</h2><div><span>TOTAL</span><strong>{formatBRL(subtotal)}</strong></div><Link className="btn outline" to="/carrinho">EDITAR CARRINHO</Link></aside></div></main>}
+import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+
+import { formatBRL } from "../catalog";
+import { useCart } from "../cart";
+
+const FORMSPREE_URL = "https://formspree.io/f/xdenabro";
+const WHATSAPP_NUMBER = "5521979239910";
+
+type Customer = {
+  name: string;
+  whatsapp: string;
+  email: string;
+};
+
+type ConfirmedOrder = {
+  id: string;
+  total: number;
+  whatsappUrl: string;
+};
+
+const STEPS = ["DADOS", "PAGAMENTO", "REVISÃO"] as const;
+
+function onlyDigits(value: string) {
+  return value.replace(/\D/g, "");
+}
+
+function createOrderId() {
+  const randomNumber = Math.floor(Math.random() * 9000) + 1000;
+  return `TUF-${new Date().getFullYear()}-${randomNumber}`;
+}
+
+export function Checkout() {
+  const { items, subtotal, clear, hydrated } = useCart();
+
+  const [step, setStep] = useState(0);
+
+  const [customer, setCustomer] = useState<Customer>({
+    name: "",
+    whatsapp: "",
+    email: "",
+  });
+
+  const [payment, setPayment] = useState("");
+  const [delivery, setDelivery] = useState("");
+  const [notes, setNotes] = useState("");
+
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [confirmedOrder, setConfirmedOrder] =
+    useState<ConfirmedOrder | null>(null);
+
+  const validCustomer =
+    customer.name.trim().length >= 3 &&
+    onlyDigits(customer.whatsapp).length >= 10 &&
+    customer.email.includes("@");
+
+  const itemsSummary = useMemo(() => {
+    return items
+      .map((item) => {
+        const pieces = item.pieces
+          .map((piece) => {
+            const size = piece.size ? ` — Tam. ${piece.size}` : "";
+            return `${piece.label}: ${piece.productName}${size}`;
+          })
+          .join(" | ");
+
+        return `${item.quantity}x ${item.name} — ${formatBRL(
+          item.unitPrice * item.quantity,
+        )}${pieces ? ` | ${pieces}` : ""}`;
+      })
+      .join("\n");
+  }, [items]);
+
+  if (!hydrated) {
+    return (
+      <main className="page-shell">
+        <p>Carregando pedido...</p>
+      </main>
+    );
+  }
+
+  if (confirmedOrder) {
+    return (
+      <main className="page-shell">
+        <section className="checkout-success">
+          <p className="eyebrow">PEDIDO REGISTRADO</p>
+
+          <h1>Pedido recebido.</h1>
+
+          <p>
+            Seu pedido foi registrado com sucesso. Agora, fale com a Tuffão
+            pelo WhatsApp para receber o link de pagamento correspondente ao
+            valor da compra.
+          </p>
+
+          <div className="order-confirmation-box">
+            <p>
+              <strong>Número do pedido:</strong> {confirmedOrder.id}
+            </p>
+
+            <p>
+              <strong>Valor total:</strong>{" "}
+              {formatBRL(confirmedOrder.total)}
+            </p>
+          </div>
+
+          <a
+            href={confirmedOrder.whatsappUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="btn primary"
+          >
+            RECEBER LINK DE PAGAMENTO NO WHATSAPP
+          </a>
+
+          <Link to="/colecao" className="btn outline">
+            VOLTAR À COLEÇÃO
+          </Link>
+        </section>
+      </main>
+    );
+  }
+
+  if (items.length === 0) {
+    return (
+      <main className="page-shell">
+        <section className="empty">
+          <h1>CARRINHO VAZIO</h1>
+
+          <p>Adicione produtos antes de finalizar o pedido.</p>
+
+          <Link to="/colecao" className="btn primary">
+            VOLTAR À COLEÇÃO
+          </Link>
+        </section>
+      </main>
+    );
+  }
+
+  function nextStep() {
+    setSubmitError("");
+
+    if (step === 0 && !validCustomer) {
+      setSubmit
