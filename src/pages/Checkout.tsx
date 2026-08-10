@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { formatBRL } from "../catalog";
 import { useCart } from "../cart";
@@ -20,6 +20,8 @@ function createOrderId() {
 
 export function Checkout() {
   const { items, subtotal, clear, hydrated } = useCart();
+
+  const navigate = useNavigate();
 
   const [step, setStep] = useState(0);
 
@@ -50,6 +52,7 @@ export function Checkout() {
    * - produto/combo
    * - quantidade
    * - modelo escolhido
+   * - modelagem (tradicional ou baby look)
    * - tamanho escolhido
    */
   const itemsSummary = useMemo(() => {
@@ -57,11 +60,15 @@ export function Checkout() {
       .map((item) => {
         const pieces = item.pieces
           .map((piece) => {
+            const fit = piece.fit
+              ? ` — Modelagem: ${piece.fit}`
+              : "";
+
             const size = piece.size
               ? ` — Tamanho: ${piece.size}`
               : "";
 
-            return `${piece.productName}${size}`;
+            return `${piece.productName}${fit}${size}`;
           })
           .join(" | ");
 
@@ -137,9 +144,7 @@ export function Checkout() {
     const paymentLabel =
       payment === "pix"
         ? "PIX"
-        : payment === "credito"
-          ? "Cartão de crédito"
-          : "Cartão de débito";
+        : "Cartão de crédito";
 
     const deliveryLabel =
       delivery === "retirada"
@@ -154,6 +159,7 @@ export function Checkout() {
       total: subtotal,
       customer,
       payment,
+      paymentLabel,
       delivery,
       notes,
     };
@@ -220,10 +226,11 @@ export function Checkout() {
       clear();
 
       /*
-       * Mantemos o fluxo antigo:
-       * vai para a página de confirmação.
+       * Navegação pelo router: um redirect com
+       * window.location recarregava a página inteira
+       * e o servidor não conhece a rota /confirmacao.
        */
-      window.location.href = "/confirmacao";
+      navigate("/confirmacao", { replace: true });
     } catch (error) {
       console.error(error);
 
@@ -364,7 +371,7 @@ export function Checkout() {
                 FORMA DE PAGAMENTO
               </h2>
 
-              <div className="option-grid">
+              <div className="option-grid two">
                 <button
                   type="button"
                   className={
@@ -392,27 +399,13 @@ export function Checkout() {
                 >
                   CARTÃO DE CRÉDITO
                 </button>
-
-                <button
-                  type="button"
-                  className={
-                    payment === "debito"
-                      ? "active"
-                      : ""
-                  }
-                  onClick={() =>
-                    setPayment("debito")
-                  }
-                >
-                  CARTÃO DE DÉBITO
-                </button>
               </div>
 
               <h2>
                 COMO DESEJA RECEBER?
               </h2>
 
-              <div className="option-grid">
+              <div className="option-grid two">
                 <button
                   type="button"
                   className={
@@ -484,6 +477,10 @@ export function Checkout() {
                           <p key={index}>
                             {piece.productName}
 
+                            {piece.fit
+                              ? ` — ${piece.fit}`
+                              : ""}
+
                             {piece.size
                               ? ` — Tam. ${piece.size}`
                               : ""}
@@ -538,9 +535,7 @@ export function Checkout() {
 
                   {payment === "pix"
                     ? "PIX"
-                    : payment === "credito"
-                      ? "Cartão de crédito"
-                      : "Cartão de débito"}
+                    : "Cartão de crédito"}
                 </p>
 
                 <p>
