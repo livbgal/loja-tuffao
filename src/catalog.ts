@@ -1,6 +1,9 @@
-import type { Combo, ComboSlot, Product, Size } from './types';
+import type { Combo, ComboSlot, Fit, Product, Size } from './types';
 
 export const SIZES: Size[] = ['PP', 'P', 'M', 'G', 'GG', 'XGG'];
+
+// Toda camisa pode ser pedida na modelagem tradicional ou baby look.
+export const FITS: Fit[] = ['Tradicional', 'Baby Look'];
 
 export const PRODUCTS: Product[] = [
   {

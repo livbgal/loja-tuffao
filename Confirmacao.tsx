@@ -8,31 +8,42 @@ const WHATSAPP_URL =
 
 export function Confirmacao() {
   return (
-    <main className="page-shell">
-      <section className="checkout-success">
-        <p className="eyebrow">PEDIDO REGISTRADO</p>
+    <div className="page confirmation">
+      <div className="container">
+        <small>PEDIDO REGISTRADO</small>
 
         <h1>Pedido recebido.</h1>
 
-        <p>
-          Seu pedido foi registrado. Entre em contato com a Tuffão pelo
-          WhatsApp para receber o link de pagamento correspondente ao valor
-          da compra.
-        </p>
+        <div className="notice">
+          <p>
+            Seu pedido foi registrado com sucesso.
+          </p>
 
-        <a
-          href={WHATSAPP_URL}
-          target="_blank"
-          rel="noreferrer"
-          className="btn primary"
-        >
-          RECEBER LINK DE PAGAMENTO
-        </a>
+          <p>
+            Agora entre em contato com a Tuffão pelo
+            WhatsApp para receber o link de pagamento
+            correspondente ao seu pedido.
+          </p>
+        </div>
 
-        <Link to="/colecao" className="btn outline">
-          VOLTAR À COLEÇÃO
-        </Link>
-      </section>
-    </main>
+        <div className="actions">
+          <a
+            href={WHATSAPP_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="btn primary"
+          >
+            RECEBER LINK DE PAGAMENTO
+          </a>
+
+          <Link
+            to="/colecao"
+            className="btn outline"
+          >
+            VOLTAR À COLEÇÃO
+          </Link>
+        </div>
+      </div>
+    </div>
   );
 }

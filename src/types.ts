@@ -1,4 +1,5 @@
 export type Size = 'PP' | 'P' | 'M' | 'G' | 'GG' | 'XGG';
+export type Fit = 'Tradicional' | 'Baby Look';
 export type ProductKind = 'shirt' | 'hoodie' | 'cup';
 
 export type Product = {
@@ -38,6 +39,7 @@ export type CartPiece = {
   productId: string;
   productName: string;
   size?: Size;
+  fit?: Fit;
 };
 
 export type CartItem = {
