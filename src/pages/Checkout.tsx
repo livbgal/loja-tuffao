@@ -22,8 +22,9 @@ export function Checkout() {
   const [payment, setPayment] = useState("");
   const [delivery, setDelivery] = useState("");
   const [notes, setNotes] = useState("");
+
   const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState("");
+  const [error, setError] = useState("");
 
   const validCustomer =
     customer.name.trim().length >= 3 &&
@@ -31,134 +32,68 @@ export function Checkout() {
     customer.email.includes("@") &&
     customer.cpf.replace(/\D/g, "").length === 11;
 
-  if (!hydrated) {
-    return (
-      <main className="page-shell">
-        <p>Carregando pedido...</p>
-      </main>
-    );
+  function paymentName() {
+    if (payment === "pix") return "PIX";
+    if (payment === "credito") return "Cartão de crédito";
+    if (payment === "debito") return "Cartão de débito";
+
+    return payment;
   }
 
-  if (items.length === 0) {
-    return (
-      <main className="page-shell">
-        <section className="empty">
-          <h1>CARRINHO VAZIO</h1>
+  function deliveryName() {
+    if (delivery === "retirada") return "Retirada com a equipe";
+    if (delivery === "entrega") return "Entrega";
 
-          <p>Adicione produtos antes de finalizar o pedido.</p>
-
-          <Link to="/colecao" className="btn primary">
-            VOLTAR À COLEÇÃO
-          </Link>
-        </section>
-      </main>
-    );
+    return delivery;
   }
 
   function next() {
-    setSubmitError("");
+    setError("");
 
     if (step === 0 && !validCustomer) {
-      setSubmitError(
-        "Preencha corretamente nome, WhatsApp, e-mail e CPF."
-      );
+      setError("Preencha corretamente os dados do comprador.");
       return;
     }
 
     if (step === 1 && (!payment || !delivery)) {
-      setSubmitError(
-        "Escolha a forma de pagamento e a forma de recebimento."
-      );
+      setError("Escolha pagamento e recebimento.");
       return;
     }
 
     setStep((current) => Math.min(2, current + 1));
   }
 
-  function paymentLabel() {
-    if (payment === "pix") return "PIX";
-    if (payment === "credito") return "Cartão de crédito";
-    if (payment === "debito") return "Cartão de débito";
-    return payment;
-  }
-
-  function deliveryLabel() {
-    if (delivery === "retirada") return "Retirada com a equipe";
-    if (delivery === "entrega") return "Entrega";
-    return delivery;
-  }
-
   /*
-   * Gera um resumo completo do pedido.
-   *
-   * O dado mais importante está em item.pieces:
-   * - piece.productName = modelo escolhido
-   * - piece.size = tamanho escolhido
+   * AQUI montamos as informações completas
+   * de modelo e tamanho para o Formspree.
    */
-  function buildFullOrderSummary() {
+  function buildItemsSummary() {
     return items
-      .map((item, itemIndex) => {
+      .map((item) => {
         const pieces = item.pieces
-          .map((piece, pieceIndex) => {
-            return [
-              `Peça ${pieceIndex + 1}`,
-              `Modelo: ${piece.productName}`,
-              `Tamanho: ${piece.size ?? "Não se aplica"}`,
-            ].join(" | ");
+          .map((piece) => {
+            const tamanho = piece.size
+              ? ` — Tamanho: ${piece.size}`
+              : "";
+
+            return `${piece.productName}${tamanho}`;
           })
-          .join("\n");
+          .join(" | ");
 
-        return [
-          `ITEM ${itemIndex + 1}`,
-          `Produto/Combo: ${item.name}`,
-          `Quantidade: ${item.quantity}`,
-          `Valor unitário: ${formatBRL(item.unitPrice)}`,
-          `Valor total: ${formatBRL(
-            item.unitPrice * item.quantity
-          )}`,
-          pieces,
-        ].join("\n");
+        return `${item.quantity}x ${item.name} => ${pieces}`;
       })
-      .join("\n\n------------------------------\n\n");
-  }
-
-  /*
-   * Campo separado, bem direto, para facilitar
-   * conferência de produção.
-   */
-  function buildModelsAndSizesSummary() {
-    return items
-      .flatMap((item) =>
-        item.pieces.map((piece) => {
-          const size = piece.size
-            ? ` — TAMANHO ${piece.size}`
-            : "";
-
-          return `${piece.productName}${size}`;
-        })
-      )
       .join("\n");
   }
 
   async function confirm() {
     if (submitting) return;
 
-    if (!validCustomer || !payment || !delivery) {
-      setSubmitError(
-        "Revise os dados antes de confirmar o pedido."
-      );
-      return;
-    }
-
     setSubmitting(true);
-    setSubmitError("");
+    setError("");
 
-    const orderId = `TUF-${new Date().getFullYear()}-${Math.floor(
-      Math.random() * 9000
-    ) + 1000}`;
-
-    const fullOrderSummary = buildFullOrderSummary();
-    const modelsAndSizes = buildModelsAndSizesSummary();
+    const orderId = `TUF-${new Date().getFullYear()}-${
+      Math.floor(Math.random() * 9000) + 1000
+    }`;
 
     const order = {
       id: orderId,
@@ -171,105 +106,59 @@ export function Checkout() {
       notes,
     };
 
+    const itemsSummary = buildItemsSummary();
+
     try {
-      const formData = new FormData();
+      const response = await fetch(FORMSPREE_URL, {
+        method: "POST",
 
-      formData.append(
-        "_subject",
-        `Novo pedido Loja Tuffão — ${orderId}`
-      );
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
 
-      formData.append("pedido", orderId);
+        body: JSON.stringify({
+          _subject: `Novo pedido Tuffão — ${orderId}`,
 
-      formData.append(
-        "data",
-        new Date().toLocaleString("pt-BR")
-      );
+          pedido: orderId,
 
-      formData.append("nome", customer.name);
-      formData.append("whatsapp", customer.whatsapp);
-      formData.append("email", customer.email);
-      formData.append("cpf", customer.cpf);
+          data: new Date().toLocaleString("pt-BR"),
 
-      formData.append(
-        "pagamento",
-        paymentLabel()
-      );
+          nome: customer.name,
 
-      formData.append(
-        "recebimento",
-        deliveryLabel()
-      );
+          whatsapp: customer.whatsapp,
 
-      formData.append(
-        "observacao",
-        notes.trim() || "Nenhuma observação."
-      );
+          email: customer.email,
 
-      formData.append(
-        "total",
-        formatBRL(subtotal)
-      );
+          cpf: customer.cpf,
 
-      /*
-       * REGISTRO COMPLETO
-       */
-      formData.append(
-        "DETALHES COMPLETOS DO PEDIDO",
-        fullOrderSummary
-      );
+          pagamento: paymentName(),
 
-      /*
-       * CAMPO RESUMIDO PARA PRODUÇÃO
-       */
-      formData.append(
-        "MODELOS E TAMANHOS",
-        modelsAndSizes
-      );
+          recebimento: deliveryName(),
 
-      /*
-       * Quantidade total de unidades no carrinho.
-       */
-      const totalUnits = items.reduce(
-        (sum, item) => sum + item.quantity,
-        0
-      );
+          observacao:
+            notes.trim() || "Nenhuma observação.",
 
-      formData.append(
-        "quantidade_total_de_itens",
-        String(totalUnits)
-      );
+          total: formatBRL(subtotal),
 
-      const response = await fetch(
-        FORMSPREE_URL,
-        {
-          method: "POST",
-          headers: {
-            Accept: "application/json",
-          },
-          body: formData,
-        }
-      );
+          itens: itemsSummary,
+        }),
+      });
 
-      const result = await response
-        .json()
-        .catch(() => null);
+      const result = await response.json().catch(() => null);
 
       if (!response.ok) {
-        console.error(
-          "Erro Formspree:",
-          result
-        );
+        console.error("Erro Formspree:", result);
 
         throw new Error(
           result?.errors?.[0]?.message ||
-            `O Formspree recusou o pedido. Código ${response.status}.`
+            "Não foi possível registrar o pedido."
         );
       }
 
       /*
-       * Só salva e limpa o carrinho se o
-       * Formspree confirmar o registro.
+       * Só salva e limpa depois que o
+       * Formspree confirma o recebimento.
        */
       localStorage.setItem(
         "tuffao-last-order-v2",
@@ -279,12 +168,12 @@ export function Checkout() {
       clear();
 
       navigate("/confirmacao");
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+      console.error(err);
 
-      setSubmitError(
-        error instanceof Error
-          ? `Não foi possível registrar o pedido: ${error.message}`
+      setError(
+        err instanceof Error
+          ? err.message
           : "Não foi possível registrar o pedido."
       );
 
@@ -292,20 +181,37 @@ export function Checkout() {
     }
   }
 
+  if (!hydrated) {
+    return (
+      <main className="page-shell">
+        <p>Carregando...</p>
+      </main>
+    );
+  }
+
+  if (items.length === 0) {
+    return (
+      <main className="page-shell">
+        <div className="empty">
+          <h1>CARRINHO VAZIO</h1>
+
+          <Link to="/colecao" className="btn primary">
+            VOLTAR À COLEÇÃO
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="page-shell">
-      <nav
-        className="breadcrumbs"
-        aria-label="Navegação"
-      >
-        <Link to="/carrinho">
-          CARRINHO
-        </Link>
+      <div className="breadcrumbs">
+        <Link to="/carrinho">CARRINHO</Link>
 
-        <span>/</span>
+        <span> / </span>
 
         <span>CHECKOUT</span>
-      </nav>
+      </div>
 
       <h1>CHECKOUT</h1>
 
@@ -313,14 +219,12 @@ export function Checkout() {
         {["DADOS", "PAGAMENTO", "REVISÃO"].map(
           (label, index) => (
             <li
+              key={label}
               className={
                 step === index ? "active" : ""
               }
-              key={label}
             >
-              <small>
-                ETAPA {index + 1}
-              </small>
+              <span>ETAPA {index + 1}</span>
 
               <strong>{label}</strong>
             </li>
@@ -330,167 +234,165 @@ export function Checkout() {
 
       <div className="checkout-layout">
         <section className="checkout-content">
+
+          {/* ETAPA 1 */}
+
           {step === 0 && (
             <div className="checkout-section">
               <h2>DADOS DO COMPRADOR</h2>
 
-              <label>
-                <span>Nome completo</span>
+              <input
+                placeholder="Nome completo"
+                value={customer.name}
+                onChange={(event) =>
+                  setCustomer({
+                    ...customer,
+                    name: event.target.value,
+                  })
+                }
+              />
 
-                <input
-                  placeholder="Nome completo"
-                  value={customer.name}
-                  onChange={(event) =>
-                    setCustomer({
-                      ...customer,
-                      name: event.target.value,
-                    })
-                  }
-                />
-              </label>
+              <input
+                placeholder="WhatsApp"
+                value={customer.whatsapp}
+                onChange={(event) =>
+                  setCustomer({
+                    ...customer,
+                    whatsapp: event.target.value,
+                  })
+                }
+              />
 
-              <label>
-                <span>WhatsApp</span>
+              <input
+                placeholder="E-mail"
+                type="email"
+                value={customer.email}
+                onChange={(event) =>
+                  setCustomer({
+                    ...customer,
+                    email: event.target.value,
+                  })
+                }
+              />
 
-                <input
-                  placeholder="(21) 99999-9999"
-                  value={customer.whatsapp}
-                  onChange={(event) =>
-                    setCustomer({
-                      ...customer,
-                      whatsapp:
-                        event.target.value,
-                    })
-                  }
-                />
-              </label>
-
-              <label>
-                <span>E-mail</span>
-
-                <input
-                  placeholder="seuemail@email.com"
-                  type="email"
-                  value={customer.email}
-                  onChange={(event) =>
-                    setCustomer({
-                      ...customer,
-                      email: event.target.value,
-                    })
-                  }
-                />
-              </label>
-
-              <label>
-                <span>CPF</span>
-
-                <input
-                  placeholder="000.000.000-00"
-                  value={customer.cpf}
-                  onChange={(event) =>
-                    setCustomer({
-                      ...customer,
-                      cpf: event.target.value,
-                    })
-                  }
-                />
-              </label>
+              <input
+                placeholder="CPF"
+                value={customer.cpf}
+                onChange={(event) =>
+                  setCustomer({
+                    ...customer,
+                    cpf: event.target.value,
+                  })
+                }
+              />
             </div>
           )}
+
+          {/* ETAPA 2 */}
 
           {step === 1 && (
             <div className="checkout-section">
-              <h2>
-                FORMA DE PAGAMENTO
-              </h2>
+              <h2>FORMA DE PAGAMENTO</h2>
 
               <div className="option-grid">
-                {[
-                  ["pix", "PIX"],
-                  [
-                    "credito",
-                    "CARTÃO DE CRÉDITO",
-                  ],
-                  [
-                    "debito",
-                    "CARTÃO DE DÉBITO",
-                  ],
-                ].map(([id, label]) => (
-                  <button
-                    key={id}
-                    type="button"
-                    className={
-                      payment === id
-                        ? "active"
-                        : ""
-                    }
-                    onClick={() =>
-                      setPayment(id)
-                    }
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-
-              <h2>
-                COMO DESEJA RECEBER?
-              </h2>
-
-              <div className="option-grid">
-                {[
-                  [
-                    "retirada",
-                    "RETIRADA COM A EQUIPE",
-                  ],
-                  ["entrega", "ENTREGA"],
-                ].map(([id, label]) => (
-                  <button
-                    key={id}
-                    type="button"
-                    className={
-                      delivery === id
-                        ? "active"
-                        : ""
-                    }
-                    onClick={() =>
-                      setDelivery(id)
-                    }
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-
-              <label>
-                <span>
-                  Observação para a equipe
-                </span>
-
-                <textarea
-                  placeholder="Observação para a equipe"
-                  value={notes}
-                  onChange={(event) =>
-                    setNotes(event.target.value)
+                <button
+                  type="button"
+                  className={
+                    payment === "pix"
+                      ? "active"
+                      : ""
                   }
-                />
-              </label>
+                  onClick={() => setPayment("pix")}
+                >
+                  PIX
+                </button>
+
+                <button
+                  type="button"
+                  className={
+                    payment === "credito"
+                      ? "active"
+                      : ""
+                  }
+                  onClick={() =>
+                    setPayment("credito")
+                  }
+                >
+                  CARTÃO DE CRÉDITO
+                </button>
+
+                <button
+                  type="button"
+                  className={
+                    payment === "debito"
+                      ? "active"
+                      : ""
+                  }
+                  onClick={() =>
+                    setPayment("debito")
+                  }
+                >
+                  CARTÃO DE DÉBITO
+                </button>
+              </div>
+
+              <h2>COMO DESEJA RECEBER?</h2>
+
+              <div className="option-grid">
+                <button
+                  type="button"
+                  className={
+                    delivery === "retirada"
+                      ? "active"
+                      : ""
+                  }
+                  onClick={() =>
+                    setDelivery("retirada")
+                  }
+                >
+                  RETIRADA COM A EQUIPE
+                </button>
+
+                <button
+                  type="button"
+                  className={
+                    delivery === "entrega"
+                      ? "active"
+                      : ""
+                  }
+                  onClick={() =>
+                    setDelivery("entrega")
+                  }
+                >
+                  ENTREGA
+                </button>
+              </div>
+
+              <textarea
+                placeholder="Observação para a equipe"
+                value={notes}
+                onChange={(event) =>
+                  setNotes(event.target.value)
+                }
+              />
             </div>
           )}
 
+          {/* ETAPA 3 */}
+
           {step === 2 && (
             <div className="checkout-section">
-              <h2>
-                REVISÃO DO PEDIDO
-              </h2>
+              <h2>REVISÃO DO PEDIDO</h2>
 
-              <ul className="checkout-items">
+              <div className="checkout-items">
                 {items.map((item) => (
-                  <li key={item.uid}>
+                  <div
+                    className="checkout-item"
+                    key={item.uid}
+                  >
                     <div>
                       <strong>
-                        {item.quantity}×{" "}
-                        {item.name}
+                        {item.quantity}× {item.name}
                       </strong>
 
                       {item.pieces.map(
@@ -512,71 +414,37 @@ export function Checkout() {
                           item.quantity
                       )}
                     </strong>
-                  </li>
+                  </div>
                 ))}
-              </ul>
+              </div>
 
               <div className="review-data">
                 <p>
-                  <strong>
-                    Comprador:
-                  </strong>{" "}
+                  <strong>Cliente:</strong>{" "}
                   {customer.name}
                 </p>
 
                 <p>
-                  <strong>
-                    WhatsApp:
-                  </strong>{" "}
+                  <strong>WhatsApp:</strong>{" "}
                   {customer.whatsapp}
                 </p>
 
                 <p>
-                  <strong>
-                    E-mail:
-                  </strong>{" "}
-                  {customer.email}
+                  <strong>Pagamento:</strong>{" "}
+                  {paymentName()}
                 </p>
 
                 <p>
-                  <strong>
-                    CPF:
-                  </strong>{" "}
-                  {customer.cpf}
+                  <strong>Recebimento:</strong>{" "}
+                  {deliveryName()}
                 </p>
-
-                <p>
-                  <strong>
-                    Pagamento:
-                  </strong>{" "}
-                  {paymentLabel()}
-                </p>
-
-                <p>
-                  <strong>
-                    Recebimento:
-                  </strong>{" "}
-                  {deliveryLabel()}
-                </p>
-
-                {notes && (
-                  <p>
-                    <strong>
-                      Observação:
-                    </strong>{" "}
-                    {notes}
-                  </p>
-                )}
               </div>
             </div>
           )}
 
-          {submitError && (
-            <p
-              className="form-error"
-              role="alert"
-            >
-              {submitError}
+          {error && (
+            <p className="form-error">
+              {error}
             </p>
           )}
 
@@ -586,13 +454,11 @@ export function Checkout() {
                 type="button"
                 className="btn outline"
                 disabled={submitting}
-                onClick={() => {
-                  setSubmitError("");
+                onClick={() =>
                   setStep(
-                    (current) =>
-                      current - 1
-                  );
-                }}
+                    (current) => current - 1
+                  )
+                }
               >
                 VOLTAR
               </button>
@@ -614,7 +480,7 @@ export function Checkout() {
                 onClick={confirm}
               >
                 {submitting
-                  ? "REGISTRANDO PEDIDO..."
+                  ? "REGISTRANDO..."
                   : "CONFIRMAR PEDIDO"}
               </button>
             )}
