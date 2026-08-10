@@ -31,6 +31,7 @@ export type Combo = {
   description: string;
   slots: ComboSlot[];
   available: boolean;
+  image?: string;
 };
 
 export type CartPiece = {
