@@ -1,0 +1,10 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# A loja é uma SPA (React Router). Sem esta regra, abrir/recarregar
+# rotas como /confirmacao direto no navegador devolve 404 do Netlify.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
