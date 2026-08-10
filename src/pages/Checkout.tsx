@@ -77,9 +77,14 @@ export function Checkout() {
       .join("\n");
   }, [items]);
 
+  const totalPieces = useMemo(
+    () => items.reduce((total, item) => total + item.quantity, 0),
+    [items]
+  );
+
   if (!hydrated) {
     return (
-      <main className="page-shell">
+      <main className="container page">
         <p>Carregando pedido...</p>
       </main>
     );
@@ -87,18 +92,16 @@ export function Checkout() {
 
   if (items.length === 0) {
     return (
-      <main className="page-shell">
-        <section className="empty">
-          <h1>CARRINHO VAZIO</h1>
+      <main className="container page">
+        <div className="empty boxed">
+          <h2>CARRINHO VAZIO</h2>
 
-          <p>
-            Adicione produtos antes de finalizar o pedido.
-          </p>
+          <p>Adicione produtos antes de finalizar o pedido.</p>
 
           <Link to="/colecao" className="btn primary">
             VOLTAR À COLEÇÃO
           </Link>
-        </section>
+        </div>
       </main>
     );
   }
@@ -245,119 +248,126 @@ export function Checkout() {
   }
 
   return (
-    <main className="page-shell">
-      <nav
-        className="breadcrumbs"
-        aria-label="Navegação"
-      >
-        <Link to="/carrinho">
-          CARRINHO
-        </Link>
+    <main className="container page">
+      <small>
+        <Link to="/carrinho">CARRINHO</Link> / CHECKOUT
+      </small>
 
-        <span>/</span>
+      <h1>FINALIZE SEU PEDIDO</h1>
 
-        <span>CHECKOUT</span>
-      </nav>
+      <p>
+        Três etapas rápidas: seus dados, a forma de pagamento e a revisão
+        final antes de enviar o pedido para a equipe.
+      </p>
 
-      <h1>CHECKOUT</h1>
-
-      <ol className="checkout-steps">
+      <ol className="steps">
         {STEPS.map((label, index) => (
           <li
             key={label}
             className={
-              step === index ? "active" : ""
+              step === index
+                ? "active"
+                : step > index
+                ? "done"
+                : ""
             }
+            aria-current={step === index ? "step" : undefined}
           >
-            <small>
-              ETAPA {index + 1}
-            </small>
-
-            <strong>
-              {label}
-            </strong>
+            ETAPA {index + 1}
+            <strong>{label}</strong>
           </li>
         ))}
       </ol>
 
-      <div className="checkout-layout">
-        <section className="checkout-content">
+      <div className="checkout-grid">
+        <section>
 
           {/* ========================= */}
           {/* ETAPA 1 — DADOS          */}
           {/* ========================= */}
 
           {step === 0 && (
-            <div className="checkout-section">
+            <div className="checkout-panel">
               <h2>DADOS DO COMPRADOR</h2>
 
-              <label>
-                <span>Nome completo</span>
+              <p>
+                Usamos esses dados apenas para identificar o pedido e falar
+                com você sobre a entrega.
+              </p>
 
-                <input
-                  type="text"
-                  placeholder="Seu nome completo"
-                  value={customer.name}
-                  onChange={(event) =>
-                    setCustomer({
-                      ...customer,
-                      name: event.target.value,
-                    })
-                  }
-                  autoComplete="name"
-                />
-              </label>
+              <div className="form field-grid">
+                <label className="wide">
+                  <span>Nome completo</span>
 
-              <label>
-                <span>WhatsApp</span>
+                  <input
+                    type="text"
+                    placeholder="Seu nome completo"
+                    value={customer.name}
+                    onChange={(event) =>
+                      setCustomer({
+                        ...customer,
+                        name: event.target.value,
+                      })
+                    }
+                    autoComplete="name"
+                  />
+                </label>
 
-                <input
-                  type="tel"
-                  placeholder="(21) 99999-9999"
-                  value={customer.whatsapp}
-                  onChange={(event) =>
-                    setCustomer({
-                      ...customer,
-                      whatsapp:
-                        event.target.value,
-                    })
-                  }
-                  autoComplete="tel"
-                />
-              </label>
+                <label>
+                  <span>WhatsApp</span>
 
-              <label>
-                <span>E-mail</span>
+                  <input
+                    type="tel"
+                    placeholder="(21) 99999-9999"
+                    value={customer.whatsapp}
+                    onChange={(event) =>
+                      setCustomer({
+                        ...customer,
+                        whatsapp: event.target.value,
+                      })
+                    }
+                    autoComplete="tel"
+                  />
+                </label>
 
-                <input
-                  type="email"
-                  placeholder="seuemail@email.com"
-                  value={customer.email}
-                  onChange={(event) =>
-                    setCustomer({
-                      ...customer,
-                      email: event.target.value,
-                    })
-                  }
-                  autoComplete="email"
-                />
-              </label>
+                <label>
+                  <span>CPF</span>
 
-              <label>
-                <span>CPF</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="000.000.000-00"
+                    value={customer.cpf}
+                    onChange={(event) =>
+                      setCustomer({
+                        ...customer,
+                        cpf: event.target.value,
+                      })
+                    }
+                  />
+                </label>
 
-                <input
-                  type="text"
-                  placeholder="000.000.000-00"
-                  value={customer.cpf}
-                  onChange={(event) =>
-                    setCustomer({
-                      ...customer,
-                      cpf: event.target.value,
-                    })
-                  }
-                />
-              </label>
+                <label className="wide">
+                  <span>E-mail</span>
+
+                  <input
+                    type="email"
+                    placeholder="seuemail@email.com"
+                    value={customer.email}
+                    onChange={(event) =>
+                      setCustomer({
+                        ...customer,
+                        email: event.target.value,
+                      })
+                    }
+                    autoComplete="email"
+                  />
+                </label>
+              </div>
+
+              <p className="field-hint">
+                O WhatsApp é por onde a equipe envia o link de pagamento.
+              </p>
             </div>
           )}
 
@@ -366,91 +376,77 @@ export function Checkout() {
           {/* ========================= */}
 
           {step === 1 && (
-            <div className="checkout-section">
-              <h2>
-                FORMA DE PAGAMENTO
-              </h2>
+            <>
+              <div className="checkout-panel">
+                <h2>FORMA DE PAGAMENTO</h2>
 
-              <div className="option-grid two">
-                <button
-                  type="button"
-                  className={
-                    payment === "pix"
-                      ? "active"
-                      : ""
-                  }
-                  onClick={() =>
-                    setPayment("pix")
-                  }
-                >
-                  PIX
-                </button>
+                <p>Escolha como prefere pagar o pedido.</p>
 
-                <button
-                  type="button"
-                  className={
-                    payment === "credito"
-                      ? "active"
-                      : ""
-                  }
-                  onClick={() =>
-                    setPayment("credito")
-                  }
-                >
-                  CARTÃO DE CRÉDITO
-                </button>
+                <div className="option-grid two">
+                  <button
+                    type="button"
+                    className={payment === "pix" ? "active" : ""}
+                    onClick={() => setPayment("pix")}
+                  >
+                    PIX
+                  </button>
+
+                  <button
+                    type="button"
+                    className={payment === "credito" ? "active" : ""}
+                    onClick={() => setPayment("credito")}
+                  >
+                    CARTÃO DE CRÉDITO
+                  </button>
+                </div>
               </div>
 
-              <h2>
-                COMO DESEJA RECEBER?
-              </h2>
+              <div className="checkout-panel">
+                <h2>COMO DESEJA RECEBER?</h2>
 
-              <div className="option-grid two">
-                <button
-                  type="button"
-                  className={
-                    delivery === "retirada"
-                      ? "active"
-                      : ""
-                  }
-                  onClick={() =>
-                    setDelivery("retirada")
-                  }
-                >
-                  RETIRADA COM A EQUIPE
-                </button>
+                <p>
+                  A retirada é feita com a equipe na universidade, sem
+                  custo adicional.
+                </p>
 
-                <button
-                  type="button"
-                  className={
-                    delivery === "entrega"
-                      ? "active"
-                      : ""
-                  }
-                  onClick={() =>
-                    setDelivery("entrega")
-                  }
-                >
-                  ENTREGA
-                </button>
+                <div className="option-grid two">
+                  <button
+                    type="button"
+                    className={delivery === "retirada" ? "active" : ""}
+                    onClick={() => setDelivery("retirada")}
+                  >
+                    RETIRADA COM A EQUIPE
+                  </button>
+
+                  <button
+                    type="button"
+                    className={delivery === "entrega" ? "active" : ""}
+                    onClick={() => setDelivery("entrega")}
+                  >
+                    ENTREGA
+                  </button>
+                </div>
               </div>
 
-              <label>
-                <span>
-                  Observação para a equipe —
-                  opcional
-                </span>
+              <div className="checkout-panel">
+                <h2>OBSERVAÇÃO</h2>
 
-                <textarea
-                  rows={4}
-                  placeholder="Ex.: informação adicional..."
-                  value={notes}
-                  onChange={(event) =>
-                    setNotes(event.target.value)
-                  }
-                />
-              </label>
-            </div>
+                <p>Opcional — algo que a equipe precise saber.</p>
+
+                <div className="form">
+                  <label>
+                    <span>Mensagem para a equipe</span>
+
+                    <textarea
+                      rows={4}
+                      placeholder="Ex.: informação adicional..."
+                      value={notes}
+                      onChange={(event) => setNotes(event.target.value)}
+                    />
+                  </label>
+                </div>
+              </div>
+            </>
           )}
 
           {/* ========================= */}
@@ -458,106 +454,91 @@ export function Checkout() {
           {/* ========================= */}
 
           {step === 2 && (
-            <div className="checkout-section">
-              <h2>
-                REVISÃO DO PEDIDO
-              </h2>
+            <>
+              <div className="checkout-panel">
+                <h2>ITENS DO PEDIDO</h2>
 
-              <ul className="checkout-items">
-                {items.map((item) => (
-                  <li key={item.uid}>
-                    <div>
+                <p>
+                  {totalPieces}{" "}
+                  {totalPieces === 1 ? "item" : "itens"} no pedido.
+                </p>
+
+                <ul className="review">
+                  {items.map((item) => (
+                    <li key={item.uid}>
+                      <span>
+                        {item.quantity}× {item.name}
+                        <em>
+                          {item.pieces
+                            .map(
+                              (piece) =>
+                                `${piece.productName}${
+                                  piece.fit ? ` · ${piece.fit}` : ""
+                                }${piece.size ? ` · Tam. ${piece.size}` : ""}`
+                            )
+                            .join(" | ")}
+                        </em>
+                      </span>
+
                       <strong>
-                        {item.quantity}×{" "}
-                        {item.name}
+                        {formatBRL(item.unitPrice * item.quantity)}
                       </strong>
-
-                      {item.pieces.map(
-                        (piece, index) => (
-                          <p key={index}>
-                            {piece.productName}
-
-                            {piece.fit
-                              ? ` — ${piece.fit}`
-                              : ""}
-
-                            {piece.size
-                              ? ` — Tam. ${piece.size}`
-                              : ""}
-                          </p>
-                        )
-                      )}
-                    </div>
-
-                    <strong>
-                      {formatBRL(
-                        item.unitPrice *
-                          item.quantity
-                      )}
-                    </strong>
-                  </li>
-                ))}
-              </ul>
-
-              <div className="review-data">
-                <p>
-                  <strong>
-                    Comprador:
-                  </strong>{" "}
-                  {customer.name}
-                </p>
-
-                <p>
-                  <strong>
-                    WhatsApp:
-                  </strong>{" "}
-                  {customer.whatsapp}
-                </p>
-
-                <p>
-                  <strong>
-                    E-mail:
-                  </strong>{" "}
-                  {customer.email}
-                </p>
-
-                <p>
-                  <strong>
-                    CPF:
-                  </strong>{" "}
-                  {customer.cpf}
-                </p>
-
-                <p>
-                  <strong>
-                    Pagamento:
-                  </strong>{" "}
-
-                  {payment === "pix"
-                    ? "PIX"
-                    : "Cartão de crédito"}
-                </p>
-
-                <p>
-                  <strong>
-                    Recebimento:
-                  </strong>{" "}
-
-                  {delivery === "retirada"
-                    ? "Retirada com a equipe"
-                    : "Entrega"}
-                </p>
-
-                {notes && (
-                  <p>
-                    <strong>
-                      Observação:
-                    </strong>{" "}
-                    {notes}
-                  </p>
-                )}
+                    </li>
+                  ))}
+                </ul>
               </div>
-            </div>
+
+              <div className="checkout-panel">
+                <h2>SEUS DADOS</h2>
+
+                <p>Confira antes de confirmar.</p>
+
+                <div className="order-info">
+                  <div>
+                    <span>COMPRADOR</span>
+                    <strong>{customer.name}</strong>
+                  </div>
+
+                  <div>
+                    <span>WHATSAPP</span>
+                    <strong>{customer.whatsapp}</strong>
+                  </div>
+
+                  <div>
+                    <span>CPF</span>
+                    <strong>{customer.cpf}</strong>
+                  </div>
+
+                  <div>
+                    <span>E-MAIL</span>
+                    <strong>{customer.email}</strong>
+                  </div>
+
+                  <div>
+                    <span>PAGAMENTO</span>
+                    <strong>
+                      {payment === "pix" ? "PIX" : "Cartão de crédito"}
+                    </strong>
+                  </div>
+
+                  <div>
+                    <span>RECEBIMENTO</span>
+                    <strong>
+                      {delivery === "retirada"
+                        ? "Retirada com a equipe"
+                        : "Entrega"}
+                    </strong>
+                  </div>
+
+                  {notes && (
+                    <div className="full">
+                      <span>OBSERVAÇÃO</span>
+                      <strong>{notes}</strong>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
           )}
 
           {/* ========================= */}
@@ -565,10 +546,7 @@ export function Checkout() {
           {/* ========================= */}
 
           {submitError && (
-            <p
-              className="form-error"
-              role="alert"
-            >
+            <p className="form-error" role="alert">
               {submitError}
             </p>
           )}
@@ -586,10 +564,7 @@ export function Checkout() {
                 onClick={() => {
                   setSubmitError("");
 
-                  setStep(
-                    (current) =>
-                      current - 1
-                  );
+                  setStep((current) => current - 1);
                 }}
               >
                 VOLTAR
@@ -623,37 +598,41 @@ export function Checkout() {
         {/* RESUMO LATERAL             */}
         {/* =========================== */}
 
-        <aside className="checkout-summary">
-          <h2>
-            RESUMO
-          </h2>
+        <aside className="summary">
+          <h2>RESUMO</h2>
+
+          <ul className="summary-items">
+            {items.map((item) => (
+              <li key={item.uid}>
+                <span>
+                  {item.quantity}× {item.name}
+                </span>
+
+                <strong>
+                  {formatBRL(item.unitPrice * item.quantity)}
+                </strong>
+              </li>
+            ))}
+          </ul>
 
           <div>
-            <span>
-              Subtotal
-            </span>
-
-            <span>
-              {formatBRL(subtotal)}
-            </span>
+            <span>SUBTOTAL</span>
+            <strong>{formatBRL(subtotal)}</strong>
           </div>
 
-          <div className="checkout-total">
-            <strong>
-              TOTAL
-            </strong>
-
-            <strong>
-              {formatBRL(subtotal)}
-            </strong>
+          <div>
+            <span>TOTAL</span>
+            <strong>{formatBRL(subtotal)}</strong>
           </div>
 
-          <Link
-            to="/carrinho"
-            className="btn outline"
-          >
+          <Link to="/carrinho" className="btn outline">
             EDITAR CARRINHO
           </Link>
+
+          <p className="summary-note">
+            O pagamento é combinado com a equipe pelo WhatsApp logo após a
+            confirmação.
+          </p>
         </aside>
       </div>
     </main>
